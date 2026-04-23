@@ -128,19 +128,39 @@ function buildTrainPanel() {
         const tks = document.createElement('div'); tks.className = 'tr-tracks';
         for (let t = 0; t < NUM_TRACKS; t++) {
             const b = document.createElement('button');
-            b.className = 'tbtn' + (tr.track === t ? ' active' : '');
+            b.className = 'tbtn' + (tr.track === t && !tr.autoRoute ? ' active' : '');
             b.id = 'tbtn_' + tr.id + '_' + t;
             b.textContent = t + 1;
             b.onclick = () => {
+                tr.autoRoute = false;
                 sim.moveTrain(tr.id, t);
                 for (let tt = 0; tt < NUM_TRACKS; tt++) {
                     const tb = document.getElementById('tbtn_' + tr.id + '_' + tt);
                     if (tb) tb.className = 'tbtn' + (tt === t ? ' active' : '');
                 }
+                const autoTb = document.getElementById('btn_auto_' + tr.id);
+                if (autoTb) autoTb.className = 'tbtn text-[10px] font-bold text-slate-500 rounded flex-1 transition-colors';
                 buildCouplingPanel();
             };
             tks.appendChild(b);
         }
+        
+        const autoBtn = document.createElement('button');
+        autoBtn.id = 'btn_auto_' + tr.id;
+        autoBtn.textContent = 'Auto';
+        autoBtn.className = 'tbtn text-[10px] font-bold rounded flex-1 transition-colors' + (tr.autoRoute ? ' active text-purple-600' : ' text-slate-500');
+        autoBtn.onclick = () => {
+            tr.autoRoute = !tr.autoRoute;
+            autoBtn.className = 'tbtn text-[10px] font-bold rounded flex-1 transition-colors' + (tr.autoRoute ? ' active text-purple-600' : ' text-slate-500');
+            if (tr.autoRoute) {
+                for (let tt = 0; tt < NUM_TRACKS; tt++) {
+                    const tb = document.getElementById('tbtn_' + tr.id + '_' + tt);
+                    if (tb) tb.className = 'tbtn';
+                }
+            }
+        };
+        tks.appendChild(autoBtn);
+        
         trkRow.appendChild(trkLbl); trkRow.appendChild(tks);
 
         // 2. Mode Buttons

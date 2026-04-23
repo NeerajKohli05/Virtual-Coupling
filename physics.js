@@ -21,6 +21,7 @@ class Train {
         this.maxV = 22; this.maxA = 1.8; this.maxB = 3.0;
         this.mode = 'cruise'; this.targetV = 10;
         this.oldTrack = track; this.transitionT = 0; this.transDur = 0.8;
+        this.autoRoute = false; this.inSwitchZone = false; this.routeDir = 1;
     }
     update(dt) {
         this.a = Math.max(-this.maxB, Math.min(this.maxA, this.a));
@@ -138,7 +139,37 @@ class Simulation {
 
     // ── main physics step ────────────────────────────────────
     update(dt) {
-        this.trains.forEach(t => { t.a = 0; });
+        this.trains.forEach(t => {
+            t.a = 0;
+            if (t.autoRoute && t.transitionT === 0) {
+                // Bounce back at the edges
+                if (t.track === 0 && t.routeDir === -1) t.routeDir = 1;
+                if (t.track === NUM_TRACKS - 1 && t.routeDir === 1) t.routeDir = -1;
+
+                let inAny = false;
+                for (let i = 0; i < SWITCH_CENTERS.length; i++) {
+                    const cs = SWITCH_CENTERS[i];
+                    const start = cs - SWITCH_HALF;
+                    const end = cs + SWITCH_HALF;
+                    
+                    if (t.s > start && t.s < end) {
+                        inAny = true;
+                        if (!t.inSwitchZone) {
+                            t.inSwitchZone = true;
+                            if (t.routeDir === 1 && t.track === i) {
+                                t.transDur = t.v > 1 ? (2 * SWITCH_HALF) / t.v : 2.0;
+                                this.moveTrain(t.id, i + 1);
+                            } else if (t.routeDir === -1 && t.track === i + 1) {
+                                t.transDur = t.v > 1 ? (2 * SWITCH_HALF) / t.v : 2.0;
+                                this.moveTrain(t.id, i);
+                            }
+                        }
+                    }
+                }
+                if (!inAny) t.inSwitchZone = false;
+            }
+        });
+        
         let telemSet = false;
 
         for (let ti = 0; ti < NUM_TRACKS; ti++) {
