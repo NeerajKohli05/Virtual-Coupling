@@ -25,9 +25,14 @@ const spdHist = [];   // [v0, v1, v2, v3]
 
 // ── Resize ─────────────────────────────────────────
 function resize() {
+    const dpr = window.devicePixelRatio || 1;
     [simC, piC, spdC].forEach(c => {
-        c.width  = c.parentElement.clientWidth;
-        c.height = c.parentElement.clientHeight;
+        const rect = c.parentElement.getBoundingClientRect();
+        c.width  = rect.width * dpr;
+        c.height = rect.height * dpr;
+        c.style.width  = `${rect.width}px`;
+        c.style.height = `${rect.height}px`;
+        c.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0);
     });
 }
 window.addEventListener('resize', resize);
@@ -461,7 +466,7 @@ function drawLinks(ctx, W, H) {
 }
 
 function drawSim() {
-    const W=simC.width, H=simC.height;
+    const W=simC.clientWidth, H=simC.clientHeight;
     sCtx.clearRect(0,0,W,H);
     drawTracks(sCtx,W,H);
     drawSCurves(sCtx,W,H);
@@ -472,7 +477,7 @@ function drawSim() {
 // ── PI Controller Chart ────────────────────────────
 // Shows P term, I term, Output, Gap Error — all auto-scaled
 function drawPIChart() {
-    const W=piC.width, H=piC.height;
+    const W=piC.clientWidth, H=piC.clientHeight;
     pCtx.clearRect(0,0,W,H);
 
     const hasCoupled = sim.getAllPairs().some(p => sim.isCoupled(p.leader, p.follower));
@@ -541,7 +546,7 @@ function drawPIChart() {
 
 // ── Speed Chart ────────────────────────────────────
 function drawSpdChart() {
-    const W=spdC.width, H=spdC.height;
+    const W=spdC.clientWidth, H=spdC.clientHeight;
     vCtx.clearRect(0,0,W,H);
     if (spdHist.length < 2) return;
     const dx=W/HIST, sc=(H-6)/28;
@@ -564,7 +569,12 @@ function drawSpdChart() {
     vCtx.fillText('0', W-20, H-2);
 }
 
-// ── Play/Pause ─────────────────────────────────────
+// ── Restart/Play/Pause ─────────────────────────────
+const restartBtn = document.getElementById('simRestartBtn');
+if (restartBtn) {
+    restartBtn.onclick = () => location.reload();
+}
+
 let isPaused = false;
 const pauseBtn = document.getElementById('simPauseBtn');
 if (pauseBtn) {
