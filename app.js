@@ -564,22 +564,37 @@ function drawSpdChart() {
     vCtx.fillText('0', W-20, H-2);
 }
 
+// ── Play/Pause ─────────────────────────────────────
+let isPaused = false;
+const pauseBtn = document.getElementById('simPauseBtn');
+if (pauseBtn) {
+    pauseBtn.onclick = () => {
+        isPaused = !isPaused;
+        pauseBtn.textContent = isPaused ? '▶️ Play' : '⏸️ Pause';
+        pauseBtn.className = isPaused 
+            ? 'flex items-center gap-1 bg-amber-100 hover:bg-amber-200 text-amber-800 px-2.5 py-1 rounded-md transition-colors border border-amber-200 shadow-sm'
+            : 'flex items-center gap-1 bg-slate-100 hover:bg-slate-200 text-slate-800 px-2.5 py-1 rounded-md transition-colors border border-slate-200 shadow-sm';
+    };
+}
+
 // ── Main loop ──────────────────────────────────────
 let lastT = performance.now(), tick=0;
 function loop(ts) {
     const dt = Math.min((ts-lastT)/1000, 0.05);
     lastT = ts;
 
-    sim.update(dt);
+    if (!isPaused) {
+        sim.update(dt);
 
-    // History
-    spdHist.push(sim.trains.map(t => t.v));
-    if (spdHist.length > HIST) spdHist.shift();
+        // History
+        spdHist.push(sim.trains.map(t => t.v));
+        if (spdHist.length > HIST) spdHist.shift();
 
-    const hasCoupled = sim.getAllPairs().some(p => sim.isCoupled(p.leader, p.follower));
-    if (hasCoupled) {
-        piHist.push({ p: sim.telem.pTerm, i: sim.telem.iTerm, out: sim.telem.output, e: sim.telem.gapErr });
-        if (piHist.length > HIST) piHist.shift();
+        const hasCoupled = sim.getAllPairs().some(p => sim.isCoupled(p.leader, p.follower));
+        if (hasCoupled) {
+            piHist.push({ p: sim.telem.pTerm, i: sim.telem.iTerm, out: sim.telem.output, e: sim.telem.gapErr });
+            if (piHist.length > HIST) piHist.shift();
+        }
     }
 
     drawSim();

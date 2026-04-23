@@ -162,26 +162,30 @@ class Simulation {
                 if (!this.isCoupled(lead, fol)) {
                     const g = this.gap(lead, fol);
                     
-                    // Maintain at least a 30m buffer space
-                    const safeDist = Math.max(0, g - 30);
+                    // Maintain at least a 180m buffer space
+                    const safeDist = Math.max(0, g - 180);
                     
                     // The absolute maximum speed follower can currently go and still have enough
-                    // room to brake before hitting the 30m buffer behind the leader
+                    // room to brake before hitting the 180m buffer behind the leader
                     const maxSafeV = lead.v + Math.sqrt(2 * fol.maxB * safeDist) * 0.9;
                     
                     if (fol.v > maxSafeV) {
                         // Violating safety margin -> hard braking
                         fol.a = -fol.maxB;
-                    } else if (g < BRAKING_DIST && fol.v > lead.v) {
-                        // Early gentle slow-down when within block warning distance (180m)
-                        const urgency = 1.0 - (g - 30) / (BRAKING_DIST - 30);
+                    } else if (g < 300 && fol.v > lead.v) {
+                        // Early gentle slow-down when within block warning distance (300m)
+                        const urgency = 1.0 - (g - 180) / (300 - 180);
                         fol.a = Math.min(fol.a, -fol.maxB * urgency);
                     }
                     
                     // Hard stop override if somehow breached the buffer
-                    if (g <= 30) {
+                    if (g <= 180) {
                         fol.a = -fol.maxB;
                         fol.v = Math.min(fol.v, lead.v); // Cap speed immediately
+                        
+                        // Enforce strict positional limit to prevent overlap
+                        fol.s = lead.s - 180;
+                        if (fol.s < 0) fol.s += TRACK_LENGTH;
                     }
                     continue;
                 }
